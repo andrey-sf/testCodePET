@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Укажите путь к вашему Dockerfile
+    container_name: django
+    ports:
+      - "8000:8000"  # Укажите порт, на котором будет доступен ваш Django-проект
+    volumes:
+      - .:/app  # Монтируем текущую директорию в /app внутри контейнера
