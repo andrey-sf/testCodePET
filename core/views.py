@@ -24,7 +24,7 @@ class CollectViewSet(viewsets.ModelViewSet):
     serializer_class = CollectSerializer
     permission_classes = [IsAuthenticated]
 
-    # @method_decorator(cache_page(60 * 15))  # Кэш на 15 минут
+    @method_decorator(cache_page(60 * 15))  # Кэш на 15 минут
     def list(self, request, *args, **kwargs):
         """
         Получает список всех сборов.
@@ -58,7 +58,7 @@ class PaymentViewSet(ModelViewSet):
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
 
-    # @method_decorator(cache_page(60 * 15))
+    @method_decorator(cache_page(60 * 15))
     def list(self, request, *args, **kwargs):
         """
         Получает список всех платежей.
@@ -66,7 +66,7 @@ class PaymentViewSet(ModelViewSet):
         """
         return super().list(request, *args, **kwargs)
 
-    # @method_decorator(cache_page(60 * 15))
+    @method_decorator(cache_page(60 * 15))
     def retrieve(self, request, *args, **kwargs):
         """
         Получает детальное представление платежа по его идентификатору.
