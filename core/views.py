@@ -32,7 +32,7 @@ class CollectViewSet(viewsets.ModelViewSet):
         """
         return super().list(request, *args, **kwargs)
 
-    @method_decorator(cache_page(60 * 15))  # Кэш на 15 минут
+    # @method_decorator(cache_page(60 * 15))  # Кэш на 15 минут
     def retrieve(self, request, *args, **kwargs):
         """
         Получает детальное представление сбора по его идентификатору.
