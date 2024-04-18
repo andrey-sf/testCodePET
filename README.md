@@ -1,6 +1,9 @@
-Админ панель 
-логин: admin@admin.ru
-пароль: admin
+Admin Panel
+Access the admin panel at:
+
+URL: http://localhost:8000/admin
+Login: admin@admin.ru
+Password: admin
 
 
 команда для запуска генерации файковых данных:
