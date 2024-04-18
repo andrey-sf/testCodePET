@@ -19,3 +19,7 @@ http://localhost:8000/schema/swagger-ui/#/users/users_create
 http://localhost:8000/schema/swagger-ui/#/jwt/jwt_create_create  
 
 авторизация в верхнем правом углу по access токену(не забудьте добавить JWT к токену)  
+
+
+http://localhost:8000/schema/redoc  
+http://localhost:8000/schema/swagger-ui  

@@ -9,11 +9,22 @@ from .serializers import CollectSerializer, PaymentSerializer
 
 
 class CollectViewSet(ModelViewSet):
+    """
+      ViewSet для работы с моделью Collect.
+
+      Предоставляет операции CRUD (Create, Retrieve, Update, Delete).
+      Поддерживает кэширование списка и детального представлений на 15 минут.
+      Occasion (birthday - День рождения, wedding - Свадьба, hiking - Поход)
+      """
     queryset = Collect.objects.all()
     serializer_class = CollectSerializer
     permission_classes = [IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
+        """
+            Получает список всех сборов.
+            Кэширует список на 15 минут.
+            """
         cache_key = 'collect_list'
         cached_data = cache.get(cache_key)
         if cached_data:
@@ -24,6 +35,10 @@ class CollectViewSet(ModelViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
+        """
+            Получает детальное представление сбора по его идентификатору.
+            Кэширует детальное представление на 15 минут.
+            """
         cache_key = f'collect_{kwargs["pk"]}'
         cached_data = cache.get(cache_key)
         if cached_data:
@@ -39,11 +54,20 @@ class CollectViewSet(ModelViewSet):
 
 
 class PaymentViewSet(ModelViewSet):
+    """
+        ViewSet для работы с моделью Payment.
+        Предоставляет операции CRUD (Create, Retrieve, Update, Delete).
+        Поддерживает кэширование списка и детальных представлений на 15 минут.
+        """
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
+        """
+               Получает список всех платежей.
+               Кэширует список на 15 минут.
+               """
         cache_key = 'payment_list'
         cached_data = cache.get(cache_key)
         if cached_data:
@@ -54,6 +78,10 @@ class PaymentViewSet(ModelViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
+        """
+               Получает детальное представление платежа по его идентификатору.
+               Кэширует детальное представление на 15 минут.
+               """
         cache_key = f'payment_{kwargs["pk"]}'
         cached_data = cache.get(cache_key)
         if cached_data:
