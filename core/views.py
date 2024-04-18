@@ -1,79 +1,71 @@
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from django.core.cache import cache
+from django.conf import settings
+from django.db.models import Sum
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-
+from rest_framework.permissions import IsAuthenticated
 from .models import Collect, Payment
 from .serializers import CollectSerializer, PaymentSerializer
-from rest_framework.response import Response
-from django.db.models import Sum
 
 
-class CollectViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet для работы с моделью Collect.
-
-    Предоставляет операции CRUD (Create, Retrieve, Update, Delete).
-    Поддерживает кэширование списка и детального представлений на 15 минут.
-
-    """
+class CollectViewSet(ModelViewSet):
     queryset = Collect.objects.all()
     serializer_class = CollectSerializer
     permission_classes = [IsAuthenticated]
 
-    # @method_decorator(cache_page(60 * 15))  # Кэш на 15 минут
     def list(self, request, *args, **kwargs):
-        """
-        Получает список всех сборов.
+        cache_key = 'collect_list'
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        cache.set(cache_key, serializer.data, settings.CACHE_TTL)
+        return Response(serializer.data)
 
-        Кэширует список на 15 минут.
-
-        """
-        return super().list(request, *args, **kwargs)
-
-    # @method_decorator(cache_page(60 * 15))  # Кэш на 15 минут
     def retrieve(self, request, *args, **kwargs):
-        """
-        Получает детальное представление сбора по его идентификатору.
-
-        Кэширует детальное представление на 15 минут.
-
-        """
-        return super().retrieve(request, *args, **kwargs)
+        cache_key = f'collect_{kwargs["pk"]}'
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        cache.set(cache_key, serializer.data, settings.CACHE_TTL)
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+        cache.delete('collect_list')
 
 
 class PaymentViewSet(ModelViewSet):
-    """
-    ViewSet для работы с моделью Payment.
-    Предоставляет операции CRUD (Create, Retrieve, Update, Delete).
-    Поддерживает кэширование списка и детальных представлений на 15 минут.
-    """
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
 
-    # @method_decorator(cache_page(60 * 15))
     def list(self, request, *args, **kwargs):
-        """
-        Получает список всех платежей.
-        Кэширует список на 15 минут.
-        """
-        return super().list(request, *args, **kwargs)
+        cache_key = 'payment_list'
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        cache.set(cache_key, serializer.data, settings.CACHE_TTL)
+        return Response(serializer.data)
 
-    # @method_decorator(cache_page(60 * 15))
     def retrieve(self, request, *args, **kwargs):
-        """
-        Получает детальное представление платежа по его идентификатору.
-        Кэширует детальное представление на 15 минут.
-        """
-        return super().retrieve(request, *args, **kwargs)
+        cache_key = f'payment_{kwargs["pk"]}'
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        cache.set(cache_key, serializer.data, settings.CACHE_TTL)
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        cache.delete('payment_list')
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
@@ -85,4 +77,5 @@ class PaymentViewSet(ModelViewSet):
         collect.collected_amount = Payment.objects.filter(collect=collect).aggregate(total_amount=Sum('amount'))[
             'total_amount']
         collect.save()
+        cache.delete('collect_list')
         return Response(serializer.data)
