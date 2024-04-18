@@ -6,11 +6,9 @@ from rest_framework.viewsets import ModelViewSet
 
 from .models import Collect, Payment
 from .serializers import CollectSerializer, PaymentSerializer
-import requests
-from django.shortcuts import redirect
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from django.db.models import Sum
+
 
 class CollectViewSet(viewsets.ModelViewSet):
     """
@@ -24,7 +22,7 @@ class CollectViewSet(viewsets.ModelViewSet):
     serializer_class = CollectSerializer
     permission_classes = [IsAuthenticated]
 
-    @method_decorator(cache_page(60 * 15))  # Кэш на 15 минут
+    # @method_decorator(cache_page(60 * 15))  # Кэш на 15 минут
     def list(self, request, *args, **kwargs):
         """
         Получает список всех сборов.
@@ -58,7 +56,7 @@ class PaymentViewSet(ModelViewSet):
     serializer_class = PaymentSerializer
     permission_classes = [IsAuthenticated]
 
-    @method_decorator(cache_page(60 * 15))
+    # @method_decorator(cache_page(60 * 15))
     def list(self, request, *args, **kwargs):
         """
         Получает список всех платежей.
@@ -66,7 +64,7 @@ class PaymentViewSet(ModelViewSet):
         """
         return super().list(request, *args, **kwargs)
 
-    @method_decorator(cache_page(60 * 15))
+    # @method_decorator(cache_page(60 * 15))
     def retrieve(self, request, *args, **kwargs):
         """
         Получает детальное представление платежа по его идентификатору.
@@ -84,6 +82,7 @@ class PaymentViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         updated_payment = serializer.save()
         collect = updated_payment.collect
-        collect.collected_amount = Payment.objects.filter(collect=collect).aggregate(total_amount=Sum('amount'))['total_amount']
+        collect.collected_amount = Payment.objects.filter(collect=collect).aggregate(total_amount=Sum('amount'))[
+            'total_amount']
         collect.save()
         return Response(serializer.data)
