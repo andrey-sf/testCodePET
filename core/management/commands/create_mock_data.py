@@ -19,7 +19,7 @@ class Command(BaseCommand):
                 if not Person.objects.filter(email=email).exists():
                     break
             password = fake.password()
-            name = fake.user_name()
+            name = fake.name()
             person = Person.objects.create_user(email=email, password=password, name=name)
             persons.append(person)
 
