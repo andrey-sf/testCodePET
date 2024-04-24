@@ -1,5 +1,4 @@
-### Admin Panel
-#### Access the admin panel at:
+### Admin Panel  
 
 URL: http://localhost:8000/admin  
 Login: admin@admin.ru  
