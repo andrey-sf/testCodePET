@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -134,12 +135,12 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 100,
 }
 
-
 SPECTACULAR_SETTINGS = {
     'TITLE': 'App for CodePET ',
     'DESCRIPTION': 'REST API for CodePET',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -178,7 +179,6 @@ DJOSER = {
 
 # Authorization
 AUTH_USER_MODEL = "core.Person"
-
 
 SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("JWT",),

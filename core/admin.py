@@ -21,7 +21,7 @@ class CollectAdmin(admin.ModelAdmin):
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'collect', 'amount', 'timestamp')
-    search_fields = ('user__username', 'collect__title')
+    search_fields = ('user__name', 'collect__title')
     list_filter = ('timestamp', 'collect__title')
 
 
@@ -48,7 +48,7 @@ class UserModelAdmin(BaseUserAdmin):
             },
         ),
     )
-    search_fields = ("email",)
+    search_fields = ("email", "name")
     ordering = ("email", "id")
     filter_horizontal = ()
 
