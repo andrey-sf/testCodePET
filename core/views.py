@@ -1,6 +1,8 @@
 from django.core.cache import cache
 from django.conf import settings
 from django.db.models import Sum
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -21,6 +23,7 @@ class CollectViewSet(ModelViewSet):
     serializer_class = CollectSerializer
     pagination_class = LimitOffsetPagination
 
+    @method_decorator(cache_page(settings.CACHE_TTL))
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
@@ -32,6 +35,7 @@ class CollectViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    @method_decorator(cache_page(settings.CACHE_TTL))
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -73,8 +77,27 @@ class PaymentViewSet(ModelViewSet):
     serializer_class = PaymentSerializer
     pagination_class = LimitOffsetPagination
 
+    @method_decorator(cache_page(settings.CACHE_TTL))
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        self.update_cache()
+
+    @method_decorator(cache_page(settings.CACHE_TTL))
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
@@ -86,7 +109,14 @@ class PaymentViewSet(ModelViewSet):
         collect.collected_amount = Payment.objects.filter(collect=collect).aggregate(total_amount=Sum('amount'))[
             'total_amount']
         collect.save()
+        self.update_cache()
         return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        self.update_cache()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['GET'])
     def collect(self, request, pk=None):
@@ -102,3 +132,6 @@ class PaymentViewSet(ModelViewSet):
         serializer = PaymentSerializer(payments, many=True)
         return Response(serializer.data)
 
+    def update_cache(self):
+        # Очистить кэш после изменения данных
+        cache.clear()
