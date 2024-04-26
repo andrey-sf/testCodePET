@@ -24,10 +24,3 @@ def send_payment_creation_email(sender, instance, created, **kwargs):
         from_email = settings.DEFAULT_FROM_EMAIL
         recipient = instance.user.email
         send_mail(subject, message, from_email, [recipient], fail_silently=False)
-
-
-@receiver([post_save, post_delete], sender=Collect)
-@receiver([post_save, post_delete], sender=Payment)
-def update_cache(sender, instance, **kwargs):
-    # Очистить кэш при изменении или удалении объектов Collect или Payment
-    cache.clear()
