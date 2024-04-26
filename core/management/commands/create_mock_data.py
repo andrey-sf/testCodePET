@@ -15,7 +15,7 @@ class Command(BaseCommand):
         fake = Faker()
         existing_emails = set(Person.objects.values_list('email', flat=True))
         new_persons = []
-        while len(new_persons) < 100:
+        while len(new_persons) < 2000:
             email = fake.email()
             if email not in existing_emails:
                 existing_emails.add(email)
@@ -28,7 +28,7 @@ class Command(BaseCommand):
 
         collects = []
         payments = []
-        for _ in range(2000):
+        for _ in range(20000):
             author = random.choice(persons)
             title = fake.sentence()
             occasion = random.choice(occasion_list)

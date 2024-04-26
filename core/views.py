@@ -1,99 +1,80 @@
 from django.core.cache import cache
 from django.conf import settings
 from django.db.models import Sum
+from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
 from .models import Collect, Payment
 from .serializers import CollectSerializer, PaymentSerializer
+from rest_framework.pagination import LimitOffsetPagination
 
 
 class CollectViewSet(ModelViewSet):
     """
-      ViewSet для работы с моделью Collect.
+    ViewSet для работы с моделью Collect.
 
-      Предоставляет операции CRUD (Create, Retrieve, Update, Delete).
-      Поддерживает кэширование списка и детального представлений на 15 минут.
-      Occasion (birthday - День рождения, wedding - Свадьба, hiking - Поход)
-      """
+    Предоставляет операции CRUD (Create, Retrieve, Update, Delete).
+    Поддерживает постраничную навигацию и кэширование.
+    """
     queryset = Collect.objects.all()
     serializer_class = CollectSerializer
-    permission_classes = [IsAuthenticated]
+    pagination_class = LimitOffsetPagination
 
     def list(self, request, *args, **kwargs):
-        """
-            Получает список всех сборов.
-            Кэширует список на 15 минут.
-            """
-        cache_key = 'collect_list'
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return Response(cached_data)
-        queryset = self.get_queryset()
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
         serializer = self.get_serializer(queryset, many=True)
-        cache.set(cache_key, serializer.data, settings.CACHE_TTL)
         return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
-        """
-            Получает детальное представление сбора по его идентификатору.
-            Кэширует детальное представление на 15 минут.
-            """
-        cache_key = f'collect_{kwargs["pk"]}'
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return Response(cached_data)
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        cache.set(cache_key, serializer.data, settings.CACHE_TTL)
         return Response(serializer.data)
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         serializer.save(author=self.request.user)
-        cache.delete('collect_list')
+        self.update_cache()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        self.update_cache()
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        self.update_cache()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def update_cache(self):
+        # Очистить кэш после изменения данных
+        cache.clear()
 
 
 class PaymentViewSet(ModelViewSet):
     """
-        ViewSet для работы с моделью Payment.
-        Предоставляет операции CRUD (Create, Retrieve, Update, Delete).
-        Поддерживает кэширование списка и детальных представлений на 15 минут.
-        """
+    ViewSet для работы с моделью Payment.
+    Предоставляет операции CRUD (Create, Retrieve, Update, Delete).
+    """
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
-
-    def list(self, request, *args, **kwargs):
-        """
-               Получает список всех платежей.
-               Кэширует список на 15 минут.
-               """
-        cache_key = 'payment_list'
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return Response(cached_data)
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        cache.set(cache_key, serializer.data, settings.CACHE_TTL)
-        return Response(serializer.data)
-
-    def retrieve(self, request, *args, **kwargs):
-        """
-               Получает детальное представление платежа по его идентификатору.
-               Кэширует детальное представление на 15 минут.
-               """
-        cache_key = f'payment_{kwargs["pk"]}'
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return Response(cached_data)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        cache.set(cache_key, serializer.data, settings.CACHE_TTL)
-        return Response(serializer.data)
+    pagination_class = LimitOffsetPagination
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-        cache.delete('payment_list')
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
@@ -105,5 +86,19 @@ class PaymentViewSet(ModelViewSet):
         collect.collected_amount = Payment.objects.filter(collect=collect).aggregate(total_amount=Sum('amount'))[
             'total_amount']
         collect.save()
-        cache.delete('collect_list')
         return Response(serializer.data)
+
+    @action(detail=True, methods=['GET'])
+    def collect(self, request, pk=None):
+        """
+        Получает список всех платежей для определенного сбора.
+        """
+        try:
+            collect = Collect.objects.get(pk=pk)
+        except Collect.DoesNotExist:
+            return Response({"error": "Collect с таким номером не существует."}, status=status.HTTP_404_NOT_FOUND)
+
+        payments = Payment.objects.filter(collect=collect)
+        serializer = PaymentSerializer(payments, many=True)
+        return Response(serializer.data)
+

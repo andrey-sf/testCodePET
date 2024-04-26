@@ -23,13 +23,12 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 
 class CollectSerializer(serializers.ModelSerializer):
-    payments = PaymentSerializer(many=True, read_only=True)
     author = serializers.CharField(source='author.username', read_only=True)
 
     class Meta:
         model = Collect
         fields = ['id', 'author', 'title', 'occasion', 'description', 'target_amount', 'collected_amount',
-                  'contributors_count', 'cover_image', 'end_datetime', 'payments']
+                  'contributors_count', 'cover_image', 'end_datetime']
         read_only_fields = ['author']
 
     def create(self, validated_data):

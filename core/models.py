@@ -26,9 +26,6 @@ class Collect(models.Model):
     def __str__(self) -> str:
         return str(self.title)
 
-    def payments(self):
-        return Payment.objects.filter(collect=self)
-
 
 class Payment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='Пользователь')
